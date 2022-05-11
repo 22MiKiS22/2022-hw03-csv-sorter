@@ -39,7 +39,11 @@
 
     <dependencies>
         <!--NOTE: You can add your dependencies in this section -->
-
+        <dependency>
+            <groupId>cz.muni.fi.pb162</groupId>
+            <artifactId>homework02-2022</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
         <!--NOTE: Don't touch anything outside this section -->
 
         <dependency>
