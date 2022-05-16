@@ -29,21 +29,11 @@ final class Application {
     }
 
     void run() throws IOException {
-        BufferedReader dataReader = Files.newBufferedReader(options.getInput(), options.getCharset());
-
-        Map<String, LabelMatcher> matchers = new HashMap<>();
-        BufferedReader filterReader = Files.newBufferedReader(options.getFilters(), options.getCharset());
-        filterReader.readLine();
-        String filter;
-        while ((filter = filterReader.readLine()) != null) {
-            matchers.put(filter.split(options.getDelimiter())[0],
-                    new LabelMatcherImpl(filter.split(options.getDelimiter())[1].trim()));
-        }
-        filterReader.close();
-        boolean[] firstLines = new boolean[matchers.size()];
+        Map<String, LabelMatcher> matchers = getMatchers();
         BufferedWriter[] writers = new BufferedWriter[matchers.size()];
 
         String line;
+        BufferedReader dataReader = Files.newBufferedReader(options.getInput(), options.getCharset());
         String dataHeader = dataReader.readLine();
         int labelsIndex = Arrays.asList(dataHeader.split(options.getDelimiter())).indexOf(options.getLabelColumn());
         while ((line = dataReader.readLine()) != null) {
@@ -51,14 +41,21 @@ final class Application {
             int currentIndex = 0;
             for (String matcher : matchers.keySet()) {
                 if (matchers.get(matcher).matches(new Title(labels))) {
-                    if (firstLines[currentIndex]) {
-                        writers[currentIndex].write(String.format("%s\n", line));
+                    if (writers[currentIndex] != null) {
+                        writers[currentIndex].write(String.format("%s%s", line, System.lineSeparator()));
                     } else {
-                        firstLines[currentIndex] = true;
-                        writers[currentIndex] = new BufferedWriter(new FileWriter(options.getOutput()
-                                .resolve(String.format("%s.csv", matcher)).toString(), options.getCharset()));
-                        writers[currentIndex].write(String.format("%s\n", dataHeader));
-                        writers[currentIndex].write(String.format("%s\n", line));
+                        writers[currentIndex] = new BufferedWriter(
+                                new FileWriter(
+                                        options.getOutput()
+                                                .resolve(String.format("%s.csv", matcher))
+                                                .toString(),
+                                        options.getCharset())
+                        );
+                        writers[currentIndex].write(
+                                String.format("%s%s%s%s",
+                                        dataHeader, System.lineSeparator(),
+                                        line, System.lineSeparator())
+                        );
                     }
                 }
                 currentIndex++;
@@ -70,5 +67,18 @@ final class Application {
                 writer.close();
             }
         }
+    }
+
+    private Map<String, LabelMatcher> getMatchers() throws IOException {
+        Map<String, LabelMatcher> matchers = new HashMap<>();
+        BufferedReader filterReader = Files.newBufferedReader(options.getFilters(), options.getCharset());
+        filterReader.readLine();
+        String filter;
+        while ((filter = filterReader.readLine()) != null) {
+            matchers.put(filter.split(options.getDelimiter())[0],
+                    new LabelMatcherImpl(filter.split(options.getDelimiter())[1].trim()));
+        }
+        filterReader.close();
+        return matchers;
     }
 }
